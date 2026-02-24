@@ -1,0 +1,32 @@
+{
+  "name": "Product Recommendations",
+  "target": "product",
+  "settings": [
+    {
+      "type": "select",
+      "id": "strategy",
+      "label": "Recommendation Strategy",
+      "default": "hybrid",
+      "options": [
+        { "value": "hybrid", "label": "Hybrid (Recommended)" },
+        { "value": "collaborative", "label": "Collaborative Filtering" },
+        { "value": "content", "label": "Content-Based" },
+        { "value": "popularity", "label": "Popularity" }
+      ]
+    },
+    {
+      "type": "number",
+      "id": "limit",
+      "label": "Number of Recommendations",
+      "default": 4,
+      "min": 2,
+      "max": 12
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title",
+      "default": "You May Also Like"
+    }
+  ]
+}
