@@ -75,23 +75,26 @@ npm run dev:frontend
 smartrecommend-lite/
 ├── backend/
 │   ├── config/
-│   │   └── index.js          # 配置模块
+│   │   └── index.js              # 配置模块
 │   ├── utils/
-│   │   └── logger.js        # 日志工具
+│   │   └── logger.js            # 日志工具
 │   ├── services/
-│   │   ├── database.js      # SQLite 数据库服务
-│   │   └── recommendation.js # 推荐引擎
-│   ├── server.js            # 服务器
-│   └── shopify-client.js    # Shopify 客户端
+│   │   ├── database.js          # SQLite 数据库服务
+│   │   ├── recommendation.js     # 推荐引擎
+│   │   ├── sync.js             # 数据同步服务
+│   │   ├── tracking.js          # 效果追踪服务
+│   │   └── billing.js           # 计费服务
+│   ├── server.js                # 服务器（含 API 端点）
+│   └── shopify-client.js        # Shopify 客户端
 ├── frontend/
-│   ├── package.json         # 前端配置
+│   ├── package.json             # 前端配置
 │   └── src/
-│       └── App.jsx          # React 组件
-├── data/                    # SQLite 数据库目录
-├── package.json             # 项目配置
-├── .env.example            # 环境变量示例
-├── .gitignore              # Git 忽略
-└── README.md               # 本文件
+│       └── App.jsx              # React 组件
+├── data/                        # SQLite 数据库目录
+├── package.json                 # 项目配置
+├── .env.example                # 环境变量示例
+├── .gitignore                  # Git 忽略
+└── README.md                   # 本文件
 ```
 
 ## 推荐算法
@@ -118,6 +121,27 @@ smartrecommend-lite/
 ### OAuth
 - `GET /auth` - 开始 OAuth 流程
 - `GET /auth/callback` - OAuth 回调
+
+### 数据同步
+- `POST /api/sync` - 全量数据同步
+  - Body: `{ shop, accessToken }`
+
+### 推荐
+- `GET /api/recommendations` - 获取推荐
+  - Query: `shop, productId, strategy, limit, excludeItems`
+
+### 效果追踪
+- `POST /api/track` - 追踪事件
+  - Body: `{ shop, eventType, ...data }`
+  - Event types: `impression`, `click`, `add_to_cart`, `purchase`
+- `GET /api/stats` - 获取统计数据
+  - Query: `shop, startDate, endDate, eventType`
+
+### 计费
+- `GET /api/billing` - 计算账单
+  - Query: `shop, startDate, endDate`
+- `POST /api/billing/charge` - 记录收费
+  - Body: `{ shop, amount, description }`
 
 ### 健康检查
 - `GET /health` - 健康检查
