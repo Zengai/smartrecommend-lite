@@ -168,6 +168,32 @@ class DatabaseService {
     return stmt.all(shop, limit);
   }
 
+  // 获取训练数据（用于推荐引擎）
+  getProductsForTraining(shop) {
+    const stmt = this.db.prepare('SELECT * FROM products WHERE shop = ?');
+    const rows = stmt.all(shop);
+    return rows.map(row => ({
+      ...row,
+      product_type: row.product_type,
+      variants: row.price ? [{ price: row.price }] : []
+    }));
+  }
+
+  getOrdersForTraining(shop) {
+    const stmt = this.db.prepare('SELECT * FROM orders WHERE shop = ?');
+    const rows = stmt.all(shop);
+    return rows.map(row => ({
+      ...row,
+      customer: row.customer_id ? { id: row.customer_id } : null,
+      line_items: []
+    }));
+  }
+
+  getCustomersForTraining(shop) {
+    const stmt = this.db.prepare('SELECT * FROM customers WHERE shop = ?');
+    return stmt.all(shop);
+  }
+
   // 事件操作
   recordEvent(shop, event) {
     const stmt = this.db.prepare(`
