@@ -96,10 +96,11 @@ app.get('/auth/callback', async (req, res) => {
       return res.status(500).send('Failed to create merchant account');
     }
 
-    // 6. TODO: 开始初始数据同步（后台异步）
-    // syncService.syncAll(shop, tokenData.access_token).catch(e => {
-    //   logger.error('Initial sync failed', { shop, error: e.message });
-    // });
+    // 6. 开始初始数据同步（后台异步）
+    logger.info('Starting initial data sync in background', { shop });
+    syncService.syncAll(shop, tokenData.access_token).catch(e => {
+      logger.error('Initial sync failed', { shop, error: e.message });
+    });
 
     logger.success('OAuth flow completed', { shop });
 
