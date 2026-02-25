@@ -7,6 +7,22 @@ class ShopifyClient {
     this.accessToken = accessToken;
   }
 
+  /**
+   * 使用 authorization code 获取 access_token
+   * https://shopify.dev/docs/api/partner/2024-01/authentication/oauth#step-2-confirm-installation
+   */
+  static async getAccessToken(shop, code) {
+    const url = `https://${shop}/admin/oauth/access_token`;
+    
+    const response = await axios.post(url, {
+      client_id: config.shopify.apiKey,
+      client_secret: config.shopify.apiSecret,
+      code
+    });
+    
+    return response.data;
+  }
+
   async request(path, options = {}) {
     const url = `https://${this.shop}/admin/api/${config.shopify.apiVersion}${path}`;
     

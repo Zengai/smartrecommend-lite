@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const config = require('./config');
 const Logger = require('./utils/logger');
+const SecurityUtils = require('./utils/security');
 const ShopifyClient = require('./shopify-client');
 const database = require('./services/database');
 const recommendation = require('./services/recommendation');
@@ -37,14 +38,78 @@ app.get('/auth', (req, res) => {
 });
 
 app.get('/auth/callback', async (req, res) => {
+  const logger = new Logger('OAuth');
   const { shop, hmac, code, state } = req.query;
   
-  // TODO: 验证 HMAC
-  // TODO: 获取 access_token
-  // TODO: 创建商家账户
-  // TODO: 开始初始数据同步
-  
-  res.redirect('/');
+  try {
+    // 1. 验证必要参数
+    if (!shop || !hmac || !code) {
+      logger.error('Missing required parameters', { shop: !!shop, hmac: !!hmac, code: !!code });
+      return res.status(400).send('Missing required parameters');
+    }
+
+    // 2. 验证 Shopify 店铺域名
+    if (!SecurityUtils.validateShop(shop)) {
+      logger.error('Invalid shop domain', { shop });
+      return res.status(400).send('Invalid shop domain');
+    }
+
+    // 3. 验证 HMAC
+    try {
+      const isValidHmac = SecurityUtils.verifyHMAC(req.query);
+      if (!isValidHmac) {
+        logger.error('Invalid HMAC', { shop });
+        return res.status(400).send('Invalid HMAC');
+      }
+    } catch (e) {
+      logger.error('HMAC verification failed', { shop, error: e.message });
+      return res.status(400).send('HMAC verification failed');
+    }
+
+    logger.info('HMAC verified successfully', { shop });
+
+    // 4. 获取 access_token
+    logger.info('Exchanging code for access_token', { shop });
+    let tokenData;
+    try {
+      tokenData = await ShopifyClient.getAccessToken(shop, code);
+      logger.success('Access token obtained', { shop });
+    } catch (e) {
+      logger.error('Failed to get access_token', { shop, error: e.message });
+      return res.status(500).send('Failed to get access token');
+    }
+
+    // 5. 创建或更新商家账户
+    const merchantId = SecurityUtils.generateUUID();
+    const merchantData = {
+      id: merchantId,
+      shop: shop,
+      accessToken: tokenData.access_token,
+      isActive: true
+    };
+
+    try {
+      database.createMerchant(merchantData);
+      logger.success('Merchant account created/updated', { shop, merchantId });
+    } catch (e) {
+      logger.error('Failed to create merchant', { shop, error: e.message });
+      return res.status(500).send('Failed to create merchant account');
+    }
+
+    // 6. TODO: 开始初始数据同步（后台异步）
+    // syncService.syncAll(shop, tokenData.access_token).catch(e => {
+    //   logger.error('Initial sync failed', { shop, error: e.message });
+    // });
+
+    logger.success('OAuth flow completed', { shop });
+
+    // 重定向到商家后台
+    res.redirect('/?shop=' + encodeURIComponent(shop));
+    
+  } catch (error) {
+    logger.error('OAuth callback error', { shop: shop || 'unknown', error: error.message });
+    res.status(500).send('OAuth error');
+  }
 });
 
 // 数据同步 API
